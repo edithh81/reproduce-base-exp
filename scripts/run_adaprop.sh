@@ -43,7 +43,7 @@ run_dataset() {
     echo "----------------------------------------"
     cd "${WORKDIR}"
     python train.py \
-        --data_path "data/${DS}/" \
+        --data_path "${ROOT}/data/${DS}/" \
         --topk "${TOPK}" \
         --layers "${LAYERS}" \
         --tau "${TAU}" \
