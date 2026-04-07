@@ -1,0 +1,50 @@
+# ============================================================
+# KUCNet Configuration
+# ============================================================
+# Reference: KUCNet/train.py
+# ============================================================
+
+training:
+  seed: 1234
+  gpu: 0
+  epoch: 40
+
+datasets:
+  last-fm:
+    lr: 0.0004
+    decay_rate: 0.994
+    lamb: 0.00014
+    hidden_dim: 48
+    attn_dim: 5
+    n_layer: 3
+    dropout: 0.02
+    act: idd
+    n_batch: 30
+    n_tbatch: 30
+    K: 35
+
+  amazon-book:
+    lr: 0.0012
+    decay_rate: 0.994
+    lamb: 0.000014
+    hidden_dim: 48
+    attn_dim: 5
+    n_layer: 3
+    dropout: 0.02
+    act: idd
+    n_batch: 20
+    n_tbatch: 20
+    K: 120
+
+  yelp2018:
+    lr: 0.0002
+    decay_rate: 0.9938
+    lamb: 0.0001
+    hidden_dim: 48
+    attn_dim: 5
+    n_layer: 3
+    dropout: 0.02
+    act: idd
+    n_batch: 20
+    n_tbatch: 20
+    K: 50

@@ -1,0 +1,84 @@
+# ============================================================
+# MoKGR Configuration
+# ============================================================
+# Reference: MoKGR-recsys/MoKGR_RecSys/train.py
+# ============================================================
+
+training:
+  seed: 1234
+  gpu: 0
+  epoch: 40
+  tau: 1.0
+
+# Early-stop gate
+gate:
+  active_gate: false
+  gate_threshold: 0.1   # lower = more layers continue
+
+# PPR subgraph sampling
+ppr:
+  active_PPR: true
+  sampling_percentage: 0.85   # proportion of subgraph retained
+  PPR_alpha: 0.85
+  max_iter: 100
+  ppr_batch_size: 64          # GPU batch size for PPR (higher = faster, more VRAM)
+
+# Mixture-of-Experts for hop selection
+moe_hop:
+  num_experts: 3
+  lambda_importance: 1.0e-07  # importance loss weight
+  lambda_load: 0.0            # load balancing loss weight
+  lambda_noise: 1.0
+  hop_temperature: 1.1        # softmax temperature (smaller = sharper)
+
+# Mixture-of-Experts for pruning
+moe_pruning:
+  num_pruning_experts: 2
+  pruning_temperature: 1.5    # softmax temperature (smaller = sharper)
+  K_source: 1000
+  K_min: 1000
+  K_max: 2000
+  l_inflection: 3             # layer at which peak K is reached
+  a: 3.0
+  lambda_importance_pruning: 1.0e-07
+  lambda_noise_pruning: 1.0
+
+datasets:
+  last-fm:
+    lr: 0.0004
+    decay_rate: 0.994
+    lamb: 0.00014
+    hidden_dim: 48
+    attn_dim: 5
+    dropout: 0.02
+    act: idd
+    n_batch: 30
+    n_tbatch: 30
+    min_hop: 2
+    max_hop: 5
+
+  amazon-book:
+    lr: 0.0012
+    decay_rate: 0.994
+    lamb: 0.000014
+    hidden_dim: 48
+    attn_dim: 5
+    dropout: 0.02
+    act: idd
+    n_batch: 20
+    n_tbatch: 20
+    min_hop: 2
+    max_hop: 5
+
+  yelp2018:
+    lr: 0.0002
+    decay_rate: 0.9938
+    lamb: 0.0001
+    hidden_dim: 48
+    attn_dim: 5
+    dropout: 0.02
+    act: idd
+    n_batch: 20
+    n_tbatch: 20
+    min_hop: 2
+    max_hop: 5

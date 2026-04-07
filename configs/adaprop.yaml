@@ -1,0 +1,57 @@
+# ============================================================
+# AdaProp Configuration
+# ============================================================
+# Reference: AdaProp_RecSys/train.py
+# ============================================================
+
+training:
+  seed: 1234
+  gpu: 0
+  epoch: 40
+  scheduler: exp        # learning rate scheduler type
+
+# AdaProp-specific global defaults
+adaprop:
+  tau: 1.0              # Gumbel-softmax temperature for adaptive sampling
+  ppr_topk: 0           # PPR edge-pruning top-k per node (0 = disabled)
+  n_edge_topk: -1       # edge sampling budget (-1 = disabled)
+
+datasets:
+  last-fm:
+    lr: 0.0004
+    decay_rate: 0.994
+    lamb: 0.00014
+    hidden_dim: 48
+    attn_dim: 5
+    n_layer: 3
+    dropout: 0.02
+    act: idd
+    n_batch: 30
+    n_tbatch: 30
+    topk: 50             # node-sampling budget per layer
+
+  amazon-book:
+    lr: 0.0012
+    decay_rate: 0.994
+    lamb: 0.000014
+    hidden_dim: 48
+    attn_dim: 5
+    n_layer: 3
+    dropout: 0.02
+    act: idd
+    n_batch: 20
+    n_tbatch: 20
+    topk: 120
+
+  yelp2018:
+    lr: 0.0002
+    decay_rate: 0.9938
+    lamb: 0.0001
+    hidden_dim: 48
+    attn_dim: 5
+    n_layer: 3
+    dropout: 0.02
+    act: idd
+    n_batch: 20
+    n_tbatch: 20
+    topk: 50
