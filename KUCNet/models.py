@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from torchdrug.layers import functional
+import torchdrug_shim as functional
 from torch_scatter import scatter
 from ppr import get_ppr
 import numpy as np

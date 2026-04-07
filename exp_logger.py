@@ -124,7 +124,7 @@ class ExpLogger:
 def _gpu_info() -> str:
     if torch.cuda.is_available():
         name = torch.cuda.get_device_name(torch.cuda.current_device())
-        total = torch.cuda.get_device_properties(torch.cuda.current_device()).total_mem / (1024**2)
+        total = torch.cuda.get_device_properties(torch.cuda.current_device()).total_memory / (1024**2)
         return f'{name} ({total:.0f} MB)'
     return 'CPU only'
 

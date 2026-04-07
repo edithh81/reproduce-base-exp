@@ -12,9 +12,10 @@ from exp_logger import ExpLogger
 
 parser = argparse.ArgumentParser(description="Parser for KUCNet")
 parser.add_argument('--data_path', type=str, default='data/last-fm/')
-parser.add_argument('--seed', type=str, default=1234)
+parser.add_argument('--seed', type=int, default=1234)
 parser.add_argument('--K', type=int, default=50)
 parser.add_argument('--gpu', type=int, default=0)
+parser.add_argument('--epoch', type=int, default=40)
 
 args = parser.parse_args()
 
@@ -177,7 +178,7 @@ if __name__ == '__main__':
         log_dir=os.path.join(os.path.dirname(__file__), '..', 'logs', 'kucnet'),
     )
 
-    n_epochs = 40
+    n_epochs = args.epoch
     best_recall = 0
     best_epoch = 0
     best_ndcg = 0
