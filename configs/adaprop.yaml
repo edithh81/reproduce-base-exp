@@ -28,7 +28,7 @@ datasets:
     act: idd
     n_batch: 30
     n_tbatch: 30
-    topk: 50             # node-sampling budget per layer
+    topk: 220             # node-sampling budget per layer
 
   amazon-book:
     lr: 0.0012
@@ -41,7 +41,7 @@ datasets:
     act: idd
     n_batch: 20
     n_tbatch: 20
-    topk: 120
+    topk: 220
 
   yelp2018:
     lr: 0.0002
@@ -54,4 +54,4 @@ datasets:
     act: idd
     n_batch: 20
     n_tbatch: 20
-    topk: 50
+    topk: 220

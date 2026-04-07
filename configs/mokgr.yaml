@@ -12,13 +12,13 @@ training:
 
 # Early-stop gate
 gate:
-  active_gate: false
+  active_gate: true
   gate_threshold: 0.1   # lower = more layers continue
 
 # PPR subgraph sampling
 ppr:
   active_PPR: true
-  sampling_percentage: 0.85   # proportion of subgraph retained
+  sampling_percentage: 0.8  # proportion of subgraph retained
   PPR_alpha: 0.85
   max_iter: 100
   ppr_batch_size: 64          # GPU batch size for PPR (higher = faster, more VRAM)
@@ -35,9 +35,9 @@ moe_hop:
 moe_pruning:
   num_pruning_experts: 2
   pruning_temperature: 1.5    # softmax temperature (smaller = sharper)
-  K_source: 1000
-  K_min: 1000
-  K_max: 2000
+  K_source: 200
+  K_min: 200
+  K_max: 400
   l_inflection: 3             # layer at which peak K is reached
   a: 3.0
   lambda_importance_pruning: 1.0e-07
@@ -55,7 +55,7 @@ datasets:
     n_batch: 30
     n_tbatch: 30
     min_hop: 2
-    max_hop: 5
+    max_hop: 4
 
   amazon-book:
     lr: 0.0012
@@ -68,7 +68,7 @@ datasets:
     n_batch: 20
     n_tbatch: 20
     min_hop: 2
-    max_hop: 5
+    max_hop: 4
 
   yelp2018:
     lr: 0.0002
@@ -81,4 +81,4 @@ datasets:
     n_batch: 20
     n_tbatch: 20
     min_hop: 2
-    max_hop: 5
+    max_hop: 4
