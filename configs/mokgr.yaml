@@ -13,36 +13,36 @@ training:
 # Early-stop gate
 gate:
   active_gate: true
-  gate_threshold: 0.1   # lower = more layers continue
+  gate_threshold: 0.1
 
 # PPR subgraph sampling
 ppr:
   active_PPR: true
-  sampling_percentage: 0.8  # proportion of subgraph retained
+  sampling_percentage: 0.8
   PPR_alpha: 0.85
   max_iter: 100
-  ppr_batch_size: 64          # GPU batch size for PPR (higher = faster, more VRAM)
+  ppr_batch_size: 64
 
 # Mixture-of-Experts for hop selection
 moe_hop:
   num_experts: 3
-  lambda_importance: 1.0e-07  # importance loss weight
-  lambda_load: 0.0            # load balancing loss weight
+  lambda_importance: 1.0e-07
+  lambda_load: 0.0
   lambda_noise: 1.0
-  hop_temperature: 1.1        # softmax temperature (smaller = sharper)
+  hop_temperature: 1.1
 
 # Mixture-of-Experts for pruning
 moe_pruning:
   num_pruning_experts: 2
-  pruning_temperature: 1.5    # softmax temperature (smaller = sharper)
-  K_source: 200
-  K_min: 200
-  K_max: 400
-  l_inflection: 3             # layer at which peak K is reached
+  pruning_temperature: 1.5
+  l_inflection: 3
   a: 3.0
   lambda_importance_pruning: 1.0e-07
   lambda_noise_pruning: 1.0
 
+# Per-dataset: K_source/K_min/K_max tuned to graph density
+# last-fm: ~130K nodes, 465K KG triples (denser, smaller)
+# amazon-book: ~184K nodes, 2.6M KG triples (larger, sparser per entity)
 datasets:
   last-fm:
     lr: 0.0004
@@ -52,10 +52,29 @@ datasets:
     attn_dim: 5
     dropout: 0.02
     act: idd
-    n_batch: 30
-    n_tbatch: 30
+    n_batch: 5
+    n_tbatch: 5
     min_hop: 2
     max_hop: 4
+    K_source: 80
+    K_min: 100
+    K_max: 200
+
+  new_last-fm:
+    lr: 0.0004
+    decay_rate: 0.994
+    lamb: 0.00014
+    hidden_dim: 48
+    attn_dim: 5
+    dropout: 0.02
+    act: idd
+    n_batch: 5
+    n_tbatch: 5
+    min_hop: 2
+    max_hop: 4
+    K_source: 80
+    K_min: 100
+    K_max: 200
 
   amazon-book:
     lr: 0.0012
@@ -65,20 +84,26 @@ datasets:
     attn_dim: 5
     dropout: 0.02
     act: idd
-    n_batch: 20
-    n_tbatch: 20
+    n_batch: 5
+    n_tbatch: 5
     min_hop: 2
     max_hop: 4
+    K_source: 150
+    K_min: 200
+    K_max: 400
 
-  yelp2018:
-    lr: 0.0002
-    decay_rate: 0.9938
-    lamb: 0.0001
+  new_amazon-book:
+    lr: 0.0005
+    decay_rate: 0.994
+    lamb: 0.000014
     hidden_dim: 48
     attn_dim: 5
-    dropout: 0.02
+    dropout: 0.01
     act: idd
-    n_batch: 20
-    n_tbatch: 20
+    n_batch: 5
+    n_tbatch: 5
     min_hop: 2
     max_hop: 4
+    K_source: 150
+    K_min: 200
+    K_max: 400

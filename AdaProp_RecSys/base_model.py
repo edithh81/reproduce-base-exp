@@ -97,6 +97,7 @@ class BaseModel:
         batch_size = self.n_batch
         n_batch = self.loader.n_train // batch_size + (self.loader.n_train % batch_size > 0)
 
+        torch.cuda.reset_peak_memory_stats()
         t0 = time.time()
         self.model.train()
 
@@ -127,7 +128,9 @@ class BaseModel:
                 print(f'  batch {i}  loss={loss.item():.4f}')
 
         train_time = time.time() - t0
+        train_peak_mem = torch.cuda.max_memory_allocated() / (1024 ** 2)
         self.t_time += train_time
+        print(f'[TRAIN] time: {train_time:.2f}s | peak CUDA mem: {train_peak_mem:.2f} MB')
 
         if getattr(self.args, 'scheduler', 'exp') == 'exp':
             self.scheduler.step()
@@ -169,6 +172,7 @@ class BaseModel:
         n_data  = self.n_test
         n_batch = n_data // batch_size + (n_data % batch_size > 0)
         self.model.eval()
+        torch.cuda.reset_peak_memory_stats()
         t0 = time.time()
         recall_sum, ndcg_sum = 0.0, 0.0
 
@@ -194,6 +198,9 @@ class BaseModel:
         recall = recall_sum / n_data
         ndcg   = ndcg_sum   / n_data
         i_time = time.time() - t0
+        inf_peak_mem = torch.cuda.max_memory_allocated() / (1024 ** 2)
+        print(f'[INFERENCE] time: {i_time:.2f}s | peak CUDA mem: {inf_peak_mem:.2f} MB')
         out_str = (f'[TEST] Recall@{K}: {recall:.4f}  NDCG@{K}: {ndcg:.4f}  '
-                   f'[TIME] train: {self.t_time:.2f}s  eval: {i_time:.2f}s\n')
+                   f'[TIME] train: {self.t_time:.2f}s  eval: {i_time:.2f}s  '
+                   f'[MEM] inf_peak: {inf_peak_mem:.2f} MB\n')
         return recall, ndcg, out_str, i_time

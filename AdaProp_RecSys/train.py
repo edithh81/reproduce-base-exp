@@ -84,8 +84,8 @@ if __name__ == '__main__':
         opts.n_layer    = args.layers
         opts.dropout    = 0.01
         opts.act        = 'idd'
-        opts.n_batch    = 20
-        opts.n_tbatch   = 20
+        opts.n_batch    = 5
+        opts.n_tbatch   = 5
 
     elif dataset == 'alibaba-fashion':
         opts.lr         = 10 ** -6.5
@@ -96,8 +96,8 @@ if __name__ == '__main__':
         opts.n_layer    = args.layers
         opts.dropout    = 0.2
         opts.act        = 'relu'
-        opts.n_batch    = 10
-        opts.n_tbatch   = 10
+        opts.n_batch    = 5
+        opts.n_tbatch   = 5
 
     elif dataset == 'last-fm':
         opts.lr         = 0.0004
@@ -108,8 +108,8 @@ if __name__ == '__main__':
         opts.n_layer    = args.layers
         opts.dropout    = 0.02
         opts.act        = 'idd'
-        opts.n_batch    = 30
-        opts.n_tbatch   = 30
+        opts.n_batch    = 5
+        opts.n_tbatch   = 5
 
     elif dataset == 'new_last-fm':
         opts.lr         = 0.0004
@@ -120,8 +120,8 @@ if __name__ == '__main__':
         opts.n_layer    = args.layers
         opts.dropout    = 0.02
         opts.act        = 'idd'
-        opts.n_batch    = 36
-        opts.n_tbatch   = 36
+        opts.n_batch    = 5
+        opts.n_tbatch   = 5
 
     elif dataset == 'new_amazon-book':
         opts.lr         = 0.0005
@@ -132,8 +132,8 @@ if __name__ == '__main__':
         opts.n_layer    = args.layers
         opts.dropout    = 0.01
         opts.act        = 'idd'
-        opts.n_batch    = 24
-        opts.n_tbatch   = 24
+        opts.n_batch    = 5
+        opts.n_tbatch   = 5
 
     elif dataset == 'amazon-book':
         opts.lr         = 0.0012
@@ -144,8 +144,8 @@ if __name__ == '__main__':
         opts.n_layer    = args.layers
         opts.dropout    = 0.02
         opts.act        = 'idd'
-        opts.n_batch    = 20
-        opts.n_tbatch   = 20
+        opts.n_batch    = 5
+        opts.n_tbatch   = 5
 
     elif dataset == 'Dis_5fold_item':
         opts.lr         = 0.0005
@@ -156,8 +156,8 @@ if __name__ == '__main__':
         opts.n_layer    = args.layers
         opts.dropout    = 0.01
         opts.act        = 'idd'
-        opts.n_batch    = 20
-        opts.n_tbatch   = 20
+        opts.n_batch    = 5
+        opts.n_tbatch   = 5
 
     elif dataset == 'Dis_5fold_user':
         opts.lr         = 0.001
@@ -168,8 +168,8 @@ if __name__ == '__main__':
         opts.n_layer    = args.layers
         opts.dropout    = 0.01
         opts.act        = 'idd'
-        opts.n_batch    = 24
-        opts.n_tbatch   = 24
+        opts.n_batch    = 5
+        opts.n_tbatch   = 5
 
     else:
         # sensible fallback for unknown datasets
@@ -181,8 +181,8 @@ if __name__ == '__main__':
         opts.n_layer    = args.layers
         opts.dropout    = 0.02
         opts.act        = 'idd'
-        opts.n_batch    = 20
-        opts.n_tbatch   = 20
+        opts.n_batch    = 5
+        opts.n_tbatch   = 5
 
     # AdaProp-specific: per-layer topk budget
     opts.n_node_topk = [args.topk] * opts.n_layer

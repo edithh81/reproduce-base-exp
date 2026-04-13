@@ -26,7 +26,7 @@ parser.add_argument('--data_path', type=str, default='data/last-fm/')
 parser.add_argument('--tau', type=float, default=1.0)
 parser.add_argument('--seed', type=int, default=1234)
 parser.add_argument('--gpu', type=int, default=0)
-parser.add_argument('--epoch', type=int, default=40)
+parser.add_argument('--epoch', type=int, default=5)
 # gate
 parser.add_argument('--gate_threshold', type=float, default=0.1)
 parser.add_argument('--active_gate', action='store_true')
@@ -40,16 +40,16 @@ parser.add_argument('--ppr_batch_size', type=int, default=64,
 # MoE for hops
 parser.add_argument('--num_experts', type=int, default=3)
 parser.add_argument('--min_hop', type=int, default=2)
-parser.add_argument('--max_hop', type=int, default=5)
+parser.add_argument('--max_hop', type=int, default=4)
 parser.add_argument('--lambda_importance', type=float, default=1e-7)
 parser.add_argument('--lambda_load', type=float, default=0)
 parser.add_argument('--lambda_noise', type=float, default=1)
 parser.add_argument('--hop_temperature', type=float, default=1.1)
 # MoE for pruning
 parser.add_argument('--pruning_temperature', type=float, default=1.5)
-parser.add_argument('--K_source', type=int, default=1000)
-parser.add_argument('--K_min', type=int, default=1000)
-parser.add_argument('--K_max', type=int, default=2000)
+parser.add_argument('--K_source', type=int, default=100)
+parser.add_argument('--K_min', type=int, default=150)
+parser.add_argument('--K_max', type=int, default=220)
 parser.add_argument('--l_inflection', type=int, default=3)
 parser.add_argument('--a', type=float, default=3.0)
 parser.add_argument('--num_pruning_experts', type=int, default=2)
@@ -91,6 +91,8 @@ if __name__ == '__main__':
 
     # ---------------------------------------------------------------
     # Per-dataset hyper-parameter presets
+    # K_min/K_max calibrated to dataset: last-fm ~130K nodes (smaller),
+    # amazon-book ~184K nodes (larger, sparser per entity → needs wider pruning)
     # ---------------------------------------------------------------
     if dataset == 'last-fm':
         opts.lr         = 0.0004
@@ -101,8 +103,11 @@ if __name__ == '__main__':
         opts.n_layer    = args.max_hop
         opts.dropout    = 0.02
         opts.act        = 'idd'
-        opts.n_batch    = 30
-        opts.n_tbatch   = 30
+        opts.n_batch    = 5
+        opts.n_tbatch   = 5
+        opts.K_source   = 80
+        opts.K_min      = 100
+        opts.K_max      = 200
 
     elif dataset == 'new_last-fm':
         opts.lr         = 0.0004
@@ -113,8 +118,11 @@ if __name__ == '__main__':
         opts.n_layer    = args.max_hop
         opts.dropout    = 0.02
         opts.act        = 'idd'
-        opts.n_batch    = 36
-        opts.n_tbatch   = 36
+        opts.n_batch    = 5
+        opts.n_tbatch   = 5
+        opts.K_source   = 80
+        opts.K_min      = 100
+        opts.K_max      = 200
 
     elif dataset == 'amazon-book':
         opts.lr         = 0.0012
@@ -125,8 +133,11 @@ if __name__ == '__main__':
         opts.n_layer    = args.max_hop
         opts.dropout    = 0.02
         opts.act        = 'idd'
-        opts.n_batch    = 20
-        opts.n_tbatch   = 20
+        opts.n_batch    = 5
+        opts.n_tbatch   = 5
+        opts.K_source   = 150
+        opts.K_min      = 200
+        opts.K_max      = 400
 
     elif dataset == 'new_amazon-book':
         opts.lr         = 0.0005
@@ -137,8 +148,11 @@ if __name__ == '__main__':
         opts.n_layer    = args.max_hop
         opts.dropout    = 0.01
         opts.act        = 'idd'
-        opts.n_batch    = 24
-        opts.n_tbatch   = 24
+        opts.n_batch    = 5
+        opts.n_tbatch   = 5
+        opts.K_source   = 150
+        opts.K_min      = 200
+        opts.K_max      = 400
 
     elif dataset == 'alibaba-fashion':
         opts.lr         = 10 ** -6.5
@@ -149,8 +163,11 @@ if __name__ == '__main__':
         opts.n_layer    = args.max_hop
         opts.dropout    = 0.2
         opts.act        = 'relu'
-        opts.n_batch    = 10
-        opts.n_tbatch   = 10
+        opts.n_batch    = 5
+        opts.n_tbatch   = 5
+        opts.K_source   = 100
+        opts.K_min      = 150
+        opts.K_max      = 300
 
     elif dataset == 'new_alibaba-fashion':
         opts.lr         = 0.00005
@@ -161,8 +178,11 @@ if __name__ == '__main__':
         opts.n_layer    = args.max_hop
         opts.dropout    = 0.01
         opts.act        = 'idd'
-        opts.n_batch    = 20
-        opts.n_tbatch   = 20
+        opts.n_batch    = 5
+        opts.n_tbatch   = 5
+        opts.K_source   = 100
+        opts.K_min      = 150
+        opts.K_max      = 300
 
     elif dataset == 'Dis_5fold_item':
         opts.lr         = 0.0005
@@ -173,8 +193,11 @@ if __name__ == '__main__':
         opts.n_layer    = args.max_hop
         opts.dropout    = 0.01
         opts.act        = 'idd'
-        opts.n_batch    = 20
-        opts.n_tbatch   = 20
+        opts.n_batch    = 5
+        opts.n_tbatch   = 5
+        opts.K_source   = 100
+        opts.K_min      = 150
+        opts.K_max      = 220
 
     elif dataset == 'Dis_5fold_user':
         opts.lr         = 0.001
@@ -185,8 +208,11 @@ if __name__ == '__main__':
         opts.n_layer    = args.max_hop
         opts.dropout    = 0.01
         opts.act        = 'idd'
-        opts.n_batch    = 24
-        opts.n_tbatch   = 24
+        opts.n_batch    = 5
+        opts.n_tbatch   = 5
+        opts.K_source   = 100
+        opts.K_min      = 150
+        opts.K_max      = 220
 
     else:
         # sensible fallback
@@ -198,9 +224,12 @@ if __name__ == '__main__':
         opts.n_layer    = args.max_hop
         opts.dropout    = 0.02
         opts.act        = 'idd'
-        opts.n_batch    = 20
-        opts.n_tbatch   = 20
-
+        opts.n_batch    = 5
+        opts.n_tbatch   = 5
+        opts.K_source   = 100
+        opts.K_min      = 150
+        opts.K_max      = 300
+        
     opts.perf_file = os.path.join('results', f'{dataset}_perf.txt')
 
     config_str = (f'lr={opts.lr:.6f}, decay={opts.decay_rate:.4f}, lamb={opts.lamb:.6f}, '
