@@ -46,6 +46,7 @@ class BaseModel(object):
         batch_size = self.n_batch
         n_batch = self.loader.n_train // batch_size + (self.loader.n_train % batch_size > 0)
         
+        torch.cuda.reset_peak_memory_stats()
         t_time = time.time()
         self.model.train()
         for i in tqdm(range(n_batch), desc='train', unit='batch'):
@@ -72,8 +73,10 @@ class BaseModel(object):
             epoch_loss += loss.item()
 
         train_time = time.time() - t_time
+        train_peak_mem = torch.cuda.max_memory_allocated() / (1024 ** 2)
         self.t_time += train_time
         print('epoch_loss:',epoch_loss)
+        print(f'[TRAIN] time: {train_time:.2f}s | peak CUDA mem: {train_peak_mem:.2f} MB')
         print('start test')
         recall, ndcg, out_str, eval_time = self.test_batch()
 
@@ -120,6 +123,7 @@ class BaseModel(object):
         n_batch = n_data // batch_size + (n_data % batch_size > 0)
         ranking = []
         self.model.eval()
+        torch.cuda.reset_peak_memory_stats()
         i_time = time.time()
         recall, ndcg = 0, 0
     
@@ -148,8 +152,10 @@ class BaseModel(object):
         ndcg = ndcg / n_data
 
         i_time = time.time() - i_time
+        inf_peak_mem = torch.cuda.max_memory_allocated() / (1024 ** 2)
+        print(f'[INFERENCE] time: {i_time:.2f}s | peak CUDA mem: {inf_peak_mem:.2f} MB')
 
-        out_str = '[TEST] recall:%.4f  ndcg:%.4f   [TIME] train:%.4f inference:%.4f\n'%( recall, ndcg, self.t_time, i_time)
+        out_str = '[TEST] recall:%.4f  ndcg:%.4f   [TIME] train:%.4f inference:%.4f  [MEM] inf_peak:%.2f MB\n'%( recall, ndcg, self.t_time, i_time, inf_peak_mem)
 
         return recall, ndcg, out_str, i_time
     
