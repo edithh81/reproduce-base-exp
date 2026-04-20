@@ -70,6 +70,8 @@ class DataLoader:
         self.n_train = len(self.train_q)
         self.n_test = len(self.test_q)
 
+        self._build_eval_item_lists()
+
         print('n_facts:',len(self.facts_cf), 'n_test_cf:', len(self.test_cf), 'n_train:', self.n_train,  'n_test:', self.n_test)
         print('users:', self.n_users,'items:', self.n_items, 'other entities:', self.n_ent - self.n_items )        
 
@@ -282,7 +284,66 @@ class DataLoader:
 
         return tail_nodes, sampled_edges, old_nodes_new_idx
 
-    def get_batch(self, batch_idx, steps=2, data='train'): 
+    # ------------------------------------------------------------------
+    # vectorized eval tensors
+    # ------------------------------------------------------------------
+    def _build_eval_item_lists(self):
+        """Precompute per-user item-local tensors for vectorized eval.
+
+        ``known_user_set``/``test_user_set`` store items as ``i + n_users``;
+        we subtract to get local ids in [0, n_items).
+        """
+        self._known_items_local_per_user = [None] * self.n_users
+        self._test_items_local_per_user = [None] * self.n_users
+        empty = torch.empty(0, dtype=torch.long)
+        for u in range(self.n_users):
+            known = self.known_user_set.get(u, None)
+            if known:
+                self._known_items_local_per_user[u] = torch.tensor(
+                    [i - self.n_users for i in known], dtype=torch.long
+                )
+            else:
+                self._known_items_local_per_user[u] = empty
+            test = self.test_user_set.get(u, None)
+            if test:
+                self._test_items_local_per_user[u] = torch.tensor(
+                    [i - self.n_users for i in test], dtype=torch.long
+                )
+            else:
+                self._test_items_local_per_user[u] = empty
+
+    def get_eval_tensors(self, subs, device):
+        """Return (known_mask [B, n_items] bool, pos_padded [B, max_pos] long,
+        pos_counts [B] long) for a batch of user ids."""
+        B = len(subs)
+        known_tensors = [self._known_items_local_per_user[int(u)] for u in subs]
+        test_tensors = [self._test_items_local_per_user[int(u)] for u in subs]
+
+        known_counts = torch.tensor([t.numel() for t in known_tensors], dtype=torch.long)
+        test_counts_cpu = torch.tensor([t.numel() for t in test_tensors], dtype=torch.long)
+
+        known_mask = torch.zeros(B, self.n_items, dtype=torch.bool)
+        if int(known_counts.sum()) > 0:
+            known_flat = torch.cat(known_tensors)
+            known_rows = torch.repeat_interleave(torch.arange(B, dtype=torch.long), known_counts)
+            known_mask[known_rows, known_flat] = True
+
+        max_pos = int(test_counts_cpu.max().item()) if B > 0 else 0
+        pos_padded = torch.full((B, max(max_pos, 1)), -1, dtype=torch.long)
+        if max_pos > 0 and int(test_counts_cpu.sum()) > 0:
+            test_flat = torch.cat(test_tensors)
+            test_rows = torch.repeat_interleave(torch.arange(B, dtype=torch.long), test_counts_cpu)
+            offsets = test_counts_cpu.cumsum(0) - test_counts_cpu
+            slot = torch.arange(test_flat.numel(), dtype=torch.long) - offsets[test_rows]
+            pos_padded[test_rows, slot] = test_flat
+
+        return (
+            known_mask.to(device, non_blocking=True),
+            pos_padded.to(device, non_blocking=True),
+            test_counts_cpu.to(device, non_blocking=True),
+        )
+
+    def get_batch(self, batch_idx, steps=2, data='train'):
         if data=='train':                                   
             query, answer, wrongs = np.array(self.train_q), self.train_a, self.train_w
         if data=='test':

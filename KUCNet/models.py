@@ -128,6 +128,8 @@ class KUCNet_trans(torch.nn.Module):
         self.W_final = nn.Linear(self.hidden_dim, 1, bias=False)         # get score
         self.gate = nn.GRU(self.hidden_dim, self.hidden_dim)
 
+        self.edge_counts_layer: list[int] = []
+
     def forward(self, subs, rels, mode='train'):
         n = len(subs)
 
@@ -135,15 +137,19 @@ class KUCNet_trans(torch.nn.Module):
         q_rel = torch.LongTensor(rels).cuda()
        
         h0 = torch.zeros((1, n,self.hidden_dim)).cuda()
-        nodes = torch.cat([torch.arange(n).unsqueeze(1).cuda(), q_sub.unsqueeze(1)], 1) 
-        hidden = torch.zeros(n, self.hidden_dim).cuda()  
+        nodes = torch.cat([torch.arange(n).unsqueeze(1).cuda(), q_sub.unsqueeze(1)], 1)
+        hidden = torch.zeros(n, self.hidden_dim).cuda()
 
         scores_all = []
+        self.edge_counts_layer = []
 
         for i in range(self.n_layer):
             nodes, edges, old_nodes_new_idx = self.loader.get_neighbors(nodes.data.cpu().numpy(), mode=mode)
-            
+
             hidden, nodes, final_nodes, old_nodes_new_idx, sampled_nodes_idx, alpha, edges = self.gnn_layers[i](q_sub, q_rel, hidden, edges, nodes, i, self.n_layer,old_nodes_new_idx)
+
+            # Post-pruning message count (edges consumed by layer i forward).
+            self.edge_counts_layer.append(int(edges.size(0)))
             
             if i == self.n_layer - 1:
                 h0 = torch.zeros(1, nodes.size(0), hidden.size(1)).cuda().index_copy_(1, old_nodes_new_idx, h0)#此处删去一个cuda()

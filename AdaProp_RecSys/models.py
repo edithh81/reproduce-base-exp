@@ -251,6 +251,8 @@ class AdaPropRecSys(nn.Module):
         self.W_final = nn.Linear(self.hidden_dim, 1, bias=False)
         self.gate    = nn.GRU(self.hidden_dim, self.hidden_dim)
 
+        self.edge_counts_layer: list[int] = []
+
     # ---- PPR helpers ----------------------------------------------------
     def set_ppr(self, ppr_indices, ppr_values):
         """Register cached top-k PPR data as model buffers on the current device.
@@ -343,6 +345,8 @@ class AdaPropRecSys(nn.Module):
                            q_sub.unsqueeze(1)], dim=1)
         hidden = torch.zeros(n, self.hidden_dim).cuda()
 
+        self.edge_counts_layer = []
+
         for i in range(self.n_layer):
             nodes, edges, old_nodes_new_idx = self.loader.get_neighbors(
                 nodes.data.cpu().numpy(), n, mode=mode,
@@ -353,6 +357,9 @@ class AdaPropRecSys(nn.Module):
                 edges, nodes, old_nodes_new_idx = self._ppr_prune_edges(
                     q_sub, edges, nodes, old_nodes_new_idx,
                 )
+
+            # Post-pruning message count (edges consumed by layer i forward).
+            self.edge_counts_layer.append(int(edges.size(0)))
 
             n_node = nodes.size(0)
 

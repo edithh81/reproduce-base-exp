@@ -2,10 +2,10 @@ import os
 import sys
 import argparse
 import torch
-import numpy as np
 from tqdm import tqdm
 from load_data import DataLoader
 from base_model import BaseModel
+from utils import seed_everything
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from exp_logger import ExpLogger
@@ -23,8 +23,8 @@ class Options(object):
     pass
 
 if __name__ == '__main__':
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
+    seed_everything(args.seed)
+    print(f'# seed: {args.seed}')
 
     dataset = args.data_path
     dataset = dataset.split('/')
@@ -165,6 +165,12 @@ if __name__ == '__main__':
         f.write(config_str)
 
     model = BaseModel(opts, loader)
+    n_params_total = sum(p.numel() for p in model.model.parameters())
+    n_params_trainable = sum(p.numel() for p in model.model.parameters() if p.requires_grad)
+    print(f'# model params: {n_params_total:,} (trainable: {n_params_trainable:,})')
+    with open(opts.perf_file, 'a+') as f:
+        f.write(f'# model_params_total: {n_params_total}\n')
+        f.write(f'# model_params_trainable: {n_params_trainable}\n')
 
     # ---- experiment logger ----
     log_config = {

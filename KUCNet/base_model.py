@@ -7,7 +7,7 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import ExponentialLR
 import heapq
 from models import KUCNet_trans
-from utils import *
+from utils import cal_bpr_loss, ndcg_k, recall_at_k, ndcg_at_k
 
 class BaseModel(object):
     def __init__(self, args, loader):
@@ -46,9 +46,11 @@ class BaseModel(object):
         batch_size = self.n_batch
         n_batch = self.loader.n_train // batch_size + (self.loader.n_train % batch_size > 0)
         
-        torch.cuda.reset_peak_memory_stats()
+        if torch.cuda.is_available():
+            torch.cuda.reset_peak_memory_stats()
         t_time = time.time()
         self.model.train()
+        edges_per_fwd_train = []
         for i in tqdm(range(n_batch), desc='train', unit='batch'):
             start = i*batch_size
             end = min(self.loader.n_train, (i+1)*batch_size)
@@ -56,7 +58,11 @@ class BaseModel(object):
             subs, rels, pos, neg = self.loader.get_batch(batch_idx)
 
             self.model.zero_grad()
+            if hasattr(self.model, "edge_counts_layer"):
+                self.model.edge_counts_layer = []
             scores = self.model(subs, rels)
+            if hasattr(self.model, "edge_counts_layer"):
+                edges_per_fwd_train.append(int(sum(self.model.edge_counts_layer)))
 
             loss = cal_bpr_loss(self.n_users, pos, neg, scores)
             loss.backward()
@@ -73,10 +79,11 @@ class BaseModel(object):
             epoch_loss += loss.item()
 
         train_time = time.time() - t_time
-        train_peak_mem = torch.cuda.max_memory_allocated() / (1024 ** 2)
-        self.t_time += train_time
+        self.train_peak_gpu = torch.cuda.max_memory_allocated() / 1024**3 if torch.cuda.is_available() else 0.0
+        self.msgs_fwd_train = int(np.mean(edges_per_fwd_train)) if edges_per_fwd_train else 0
+        self.t_time = train_time
         print('epoch_loss:',epoch_loss)
-        print(f'[TRAIN] time: {train_time:.2f}s | peak CUDA mem: {train_peak_mem:.2f} MB')
+        print(f'[TRAIN] time: {train_time:.2f}s | train_peak: {self.train_peak_gpu:.2f} GiB | msgs/fwd: {self.msgs_fwd_train}')
         print('start test')
         recall, ndcg, out_str, eval_time = self.test_batch()
 
@@ -123,39 +130,57 @@ class BaseModel(object):
         n_batch = n_data // batch_size + (n_data % batch_size > 0)
         ranking = []
         self.model.eval()
-        torch.cuda.reset_peak_memory_stats()
+        if torch.cuda.is_available():
+            torch.cuda.reset_peak_memory_stats()
         i_time = time.time()
         recall, ndcg = 0, 0
-    
-        for id in tqdm(range(n_batch), desc='eval', unit='batch'):
-            start = id*batch_size
-            end = min(n_data, (id+1)*batch_size)
-            batch_idx = np.arange(start, end)
-            subs, rels, objs = self.loader.get_batch(batch_idx, data='test')
-            scores = self.model(subs, rels, mode='test').data.cpu().numpy()
+        edges_per_fwd_test = []
 
-            batch_recall, batch_ndcg = 0, 0
-            for i in range(len(subs)):
-                u , u_score = subs[i], scores[i]
-                one_recall, one_ndcg = self.test_one_user(u, u_score)
-                batch_recall = batch_recall + one_recall
-                batch_ndcg = batch_ndcg + one_ndcg
+        K = 20
+        with torch.no_grad():
+            for id in tqdm(range(n_batch), desc='eval', unit='batch'):
+                start = id*batch_size
+                end = min(n_data, (id+1)*batch_size)
+                batch_idx = np.arange(start, end)
+                subs, rels, objs = self.loader.get_batch(batch_idx, data='test')
+                if hasattr(self.model, "edge_counts_layer"):
+                    self.model.edge_counts_layer = []
+                scores = self.model(subs, rels, mode='test')  # [B, n_items] on GPU
+                if hasattr(self.model, "edge_counts_layer"):
+                    edges_per_fwd_test.append(int(sum(self.model.edge_counts_layer)))
 
-            recall = recall + batch_recall
-            ndcg = ndcg + batch_ndcg
-            batch_recall = batch_recall / len(subs)
-            batch_ndcg = batch_ndcg / len(subs)
-            if id % 1000 == 0:
-                print(id, 'batch recall:', batch_recall, 'batch ndcg:', batch_ndcg)
+                known_mask, pos_padded, pos_counts = self.loader.get_eval_tensors(subs, self.device)
+                scores = scores.masked_fill(known_mask, float('-inf'))
+                _, topk_idx = torch.topk(scores, K, dim=-1)
+
+                batch_recall = recall_at_k(topk_idx, pos_padded, pos_counts)
+                batch_ndcg = ndcg_at_k(topk_idx, pos_padded, pos_counts)
+
+                recall = recall + batch_recall.sum().item()
+                ndcg = ndcg + batch_ndcg.sum().item()
+
+                if id % 1000 == 0:
+                    b = max(batch_recall.numel(), 1)
+                    print(id, 'batch recall:', batch_recall.sum().item() / b, 'batch ndcg:', batch_ndcg.sum().item() / b)
 
         recall = recall / n_data
         ndcg = ndcg / n_data
 
         i_time = time.time() - i_time
-        inf_peak_mem = torch.cuda.max_memory_allocated() / (1024 ** 2)
-        print(f'[INFERENCE] time: {i_time:.2f}s | peak CUDA mem: {inf_peak_mem:.2f} MB')
+        self.i_time = i_time
+        self.test_peak_gpu = torch.cuda.max_memory_allocated() / 1024**3 if torch.cuda.is_available() else 0.0
+        self.msgs_fwd_test = int(np.mean(edges_per_fwd_test)) if edges_per_fwd_test else 0
+        print(f'[INFERENCE] time: {i_time:.2f}s | inf_peak: {self.test_peak_gpu:.2f} GiB | msgs/fwd: {self.msgs_fwd_test}')
 
-        out_str = '[TEST] recall:%.4f  ndcg:%.4f   [TIME] train:%.4f inference:%.4f  [MEM] inf_peak:%.2f MB\n'%( recall, ndcg, self.t_time, i_time, inf_peak_mem)
+        out_str = (
+            '[TEST] recall:%.4f  ndcg:%.4f   [TIME] train:%.4f inference:%.4f  '
+            '[GPU] train_peak:%.2fGiB infer_peak:%.2fGiB  '
+            '[MSG] msgs/fwd:%d msgs/fwd_test:%d\n'
+        ) % (
+            recall, ndcg, self.t_time, i_time,
+            getattr(self, 'train_peak_gpu', 0.0), self.test_peak_gpu,
+            getattr(self, 'msgs_fwd_train', 0), self.msgs_fwd_test,
+        )
 
         return recall, ndcg, out_str, i_time
     

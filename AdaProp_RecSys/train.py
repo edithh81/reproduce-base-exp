@@ -14,12 +14,11 @@ AdaProp-specific knobs (``--topk``, ``--tau``, ``--layers``).
 import os
 import sys
 import argparse
-import numpy as np
 import torch
 from tqdm import tqdm
 from load_data import DataLoader
 from base_model import BaseModel
-from utils import checkPath
+from utils import checkPath, seed_everything
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from exp_logger import ExpLogger
@@ -51,9 +50,9 @@ class Options:
 
 
 if __name__ == '__main__':
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
+    seed_everything(args.seed)
     torch.set_num_threads(8)
+    print(f'# seed: {args.seed}')
 
     dataset = args.data_path.rstrip('/').split('/')[-1]
     torch.cuda.set_device(args.gpu)
@@ -208,6 +207,12 @@ if __name__ == '__main__':
 
     # ---- model ----
     model = BaseModel(opts, loader)
+    n_params_total = sum(p.numel() for p in model.model.parameters())
+    n_params_trainable = sum(p.numel() for p in model.model.parameters() if p.requires_grad)
+    print(f'# model params: {n_params_total:,} (trainable: {n_params_trainable:,})')
+    with open(opts.perf_file, 'a+') as f:
+        f.write(f'# model_params_total: {n_params_total}\n')
+        f.write(f'# model_params_trainable: {n_params_trainable}\n')
 
     # ---- PPR edge pruning (compute / load cached) ----
     if opts.ppr_topk > 0:
