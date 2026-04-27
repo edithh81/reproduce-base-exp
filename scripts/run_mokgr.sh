@@ -22,10 +22,13 @@ with open('${1}') as f:
     cfg = yaml.safe_load(f)
 keys = '${2}'.split('.')
 val = cfg
-for k in keys:
-    val = val[k]
-print(val)
-"
+try:
+    for k in keys:
+        val = val[k]
+    print(val)
+except (KeyError, TypeError):
+    sys.exit(1)
+" 2>/dev/null
 }
 
 run_dataset() {
@@ -58,12 +61,13 @@ run_dataset() {
     local LAMBDA_NOISE=$(parse_yaml "${CONFIG}" "moe_hop.lambda_noise")
     local HOP_TEMP=$(parse_yaml "${CONFIG}" "moe_hop.hop_temperature")
 
-    # MoE pruning
-    local N_PRUNE_EXP=$(parse_yaml "${CONFIG}" "moe_pruning.num_pruning_experts")
+    # MoE pruning — K values and num_pruning_experts are per-dataset; others are global
+    local _N_PRUNE_DS=$(parse_yaml "${CONFIG}" "datasets.${DS}.num_pruning_experts")
+    local N_PRUNE_EXP=${_N_PRUNE_DS:-$(parse_yaml "${CONFIG}" "moe_pruning.num_pruning_experts")}
     local PRUNE_TEMP=$(parse_yaml "${CONFIG}" "moe_pruning.pruning_temperature")
-    local K_SRC=$(parse_yaml "${CONFIG}" "moe_pruning.K_source")
-    local K_MIN=$(parse_yaml "${CONFIG}" "moe_pruning.K_min")
-    local K_MAX=$(parse_yaml "${CONFIG}" "moe_pruning.K_max")
+    local K_SRC=$(parse_yaml "${CONFIG}" "datasets.${DS}.K_source")
+    local K_MIN=$(parse_yaml "${CONFIG}" "datasets.${DS}.K_min")
+    local K_MAX=$(parse_yaml "${CONFIG}" "datasets.${DS}.K_max")
     local L_INFL=$(parse_yaml "${CONFIG}" "moe_pruning.l_inflection")
     local A_VAL=$(parse_yaml "${CONFIG}" "moe_pruning.a")
     local LAMBDA_IMP_P=$(parse_yaml "${CONFIG}" "moe_pruning.lambda_importance_pruning")

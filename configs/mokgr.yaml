@@ -43,6 +43,7 @@ moe_pruning:
 # Per-dataset: K_source/K_min/K_max tuned to graph density
 # last-fm: ~130K nodes, 465K KG triples (denser, smaller)
 # amazon-book: ~184K nodes, 2.6M KG triples (larger, sparser per entity)
+# *_subset entries use identical settings to their parent dataset
 datasets:
   last-fm:
     lr: 0.0004
@@ -91,6 +92,7 @@ datasets:
     K_source: 150
     K_min: 200
     K_max: 400
+    num_pruning_experts: 3
 
   new_amazon-book:
     lr: 0.0005
@@ -107,3 +109,38 @@ datasets:
     K_source: 150
     K_min: 200
     K_max: 400
+    num_pruning_experts: 3
+
+  amazon-book_subset:
+    lr: 0.0012
+    decay_rate: 0.994
+    lamb: 0.000014
+    hidden_dim: 48
+    attn_dim: 5
+    dropout: 0.02
+    act: idd
+    n_batch: 5
+    n_tbatch: 5
+    min_hop: 2
+    max_hop: 4
+    K_source: 150
+    K_min: 200
+    K_max: 400
+    num_pruning_experts: 3
+
+  new_amazon-book_subset:
+    lr: 0.0005
+    decay_rate: 0.994
+    lamb: 0.000014
+    hidden_dim: 48
+    attn_dim: 5
+    dropout: 0.01
+    act: idd
+    n_batch: 5
+    n_tbatch: 5
+    min_hop: 2
+    max_hop: 4
+    K_source: 150
+    K_min: 200
+    K_max: 400
+    num_pruning_experts: 3

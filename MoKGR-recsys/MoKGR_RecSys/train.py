@@ -124,7 +124,7 @@ if __name__ == '__main__':
         opts.K_min      = 100
         opts.K_max      = 200
 
-    elif dataset == 'amazon-book':
+    elif dataset in ('amazon-book', 'amazon-book_subset'):
         opts.lr         = 0.0012
         opts.decay_rate = 0.994
         opts.lamb       = 0.000014
@@ -139,7 +139,7 @@ if __name__ == '__main__':
         opts.K_min      = 200
         opts.K_max      = 400
 
-    elif dataset == 'new_amazon-book':
+    elif dataset in ('new_amazon-book', 'new_amazon-book_subset'):
         opts.lr         = 0.0005
         opts.decay_rate = 0.994
         opts.lamb       = 0.000014
